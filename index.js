@@ -42,6 +42,41 @@ app.get('/api/persons', (req, res) => {
     res.json(persons)
 })
 
+app.post('/api/persons', (req, res) => {
+
+    const name = req.body.name
+    const number = req.body.number
+    console.log (name)
+    console.log (number)
+    console.log (persons.find(person => person.name === name))
+    const validate = (name, number) => {
+        if (number === "") {
+            return { error: "number should be passed" }
+        } else if (name === "") {
+            return { error: "name should be passed" }
+        } else if (persons.find(person => person.name === name)!=undefined) {
+            return { error: "name already exists" }
+        }
+        return null
+    }
+    
+    const val = validate(name, number)
+    console.log(val)
+
+    if (val) {
+        res.status(400).json(val)
+    } else {
+        let id = Math.floor(Math.random() * (persons.length + 10 - persons.length + 1) + persons.length);
+        console.log(id)
+
+        const person = { name: name, number: number, id: id }
+
+        persons.push(person)
+        console.log(persons)
+        res.json(person)
+    }
+})
+
 app.get('/api/persons/:id', (req, res) => {
     const id = Number(req.params.id)
     const person = persons.find(person => person.id === id)
@@ -58,13 +93,13 @@ app.delete('/api/persons/:id', (req, res) => {
     const id = Number(req.params.id)
     const person = persons.find(person => person.id === id)
     if (person) {
-        persons.splice(id,1)
+        persons.splice(id, 1)
         console.log(persons)
         res.status(204).end()
     } else {
         res.status(404).end()
     }
-    
+
 })
 
 const PORT = 3001
