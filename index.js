@@ -1,6 +1,8 @@
+require('dotenv').config()
 const express = require('express')
-const morgan = (require('morgan'))
+const morgan = require('morgan')
 const bodyParser = require('body-parser')
+const Person = require ('./models/person')
 
 const app = express()
 
@@ -10,6 +12,7 @@ app.use(bodyParser.json())
 app.use(morgan('combined'))
 app.use(cors())
 app.use(express.static('build'))
+
 
 let persons = [
     {
@@ -45,23 +48,36 @@ app.get('/info', (req, res) => {
 })
 
 app.get('/api/persons', (req, res) => {
-    res.json(persons)
+    Person.find({}).then(persons => {
+        res.json(persons.map(person => person.toJSON()))
+    })
+
+    //res.json(persons)
+})
+
+app.get('/api/persons/:id', (req, res) => {
+    const id = Number(req.params.id)
+
+    Person.findById(id).then(person => {
+        res.json(person)
+    })
 })
 
 app.post('/api/persons', (req, res) => {
 
     const name = req.body.name
     const number = req.body.number
+    // validating request content is not empty
     console.log (name)
     console.log (number)
     console.log (persons.find(person => person.name === name))
     const validate = (name, number) => {
-        if (number === "") {
+        if (number === "" || number === undefined) {
             return { error: "number should be passed" }
-        } else if (name === "") {
+        } else if (name === "" || name === undefined) {
             return { error: "name should be passed" }
-        } else if (persons.find(person => person.name === name)!=undefined) {
-            return { error: "name already exists" }
+        // } else if (persons.find(person => person.name === name)!=undefined) {
+        //     return { error: "name already exists" }
         }
         return null
     }
@@ -75,23 +91,15 @@ app.post('/api/persons', (req, res) => {
         let id = Math.floor(Math.random() * (persons.length + 10 - persons.length + 1) + persons.length);
         console.log(id)
 
-        const person = { name: name, number: number, id: id }
+        const person = new Person({ 
+            name: name, number: 
+            number, 
+            id: id
+        })
 
-        persons.push(person)
-        console.log(persons)
-        res.json(person)
-    }
-})
-
-app.get('/api/persons/:id', (req, res) => {
-    const id = Number(req.params.id)
-    const person = persons.find(person => person.id === id)
-
-    if (person) {
-        console.log(person)
-        res.json(person)
-    } else {
-        res.status(404).end()
+        person.save().then(savedPerson => {
+            res.json(savedPerson.toJSON())
+        })        
     }
 })
 
@@ -105,10 +113,10 @@ app.delete('/api/persons/:id', (req, res) => {
     } else {
         res.status(404).end()
     }
-
 })
 
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT
+
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`)
 })
