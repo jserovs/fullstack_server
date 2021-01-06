@@ -40,26 +40,26 @@ app.get('/info', (req, res) => {
     let time = new Date().toString();
     Date().to
     console.log(time)
-    res.send(
-        'There is ' + persons.length + ' people</br>'
-        + time)
-
-
+    Person.find({}).then(persons => {
+        res.send('There is ' + persons.length + ' people</br>'
+        + time)        
+    })
 })
 
 app.get('/api/persons', (req, res) => {
     Person.find({}).then(persons => {
         res.json(persons.map(person => person.toJSON()))
     })
-
-    //res.json(persons)
 })
 
 app.get('/api/persons/:id', (req, res) => {
     const id = Number(req.params.id)
 
-    Person.findById(id).then(person => {
-        res.json(person)
+    console.log ('searching for subscription')
+
+    Person.find({ id : id} , (err, person) => {
+        console.log(person);
+        res.json(person);
     })
 })
 
@@ -68,9 +68,9 @@ app.post('/api/persons', (req, res) => {
     const name = req.body.name
     const number = req.body.number
     // validating request content is not empty
-    console.log (name)
-    console.log (number)
-    console.log (persons.find(person => person.name === name))
+    console.log ('name:' + name)
+    console.log ('number: ' + number)
+
     const validate = (name, number) => {
         if (number === "" || number === undefined) {
             return { error: "number should be passed" }
@@ -81,26 +81,32 @@ app.post('/api/persons', (req, res) => {
         }
         return null
     }
+
+    Person.find({}).then(persons => {
+
+        console.log ('search with same number: ' + persons.find(person => person.name === name))
+        const val = validate(name, number)
+        console.log(val)
     
-    const val = validate(name, number)
-    console.log(val)
+        if (val) {
+            res.status(400).json(val)
+        } else {
+            let id = Math.floor(Math.random() * (persons.length + 10 - persons.length + 1) + persons.length);
+            console.log(id)
+    
+            const person = new Person({ 
+                name: name, number: 
+                number, 
+                id: id
+            })
+    
+            person.save().then(savedPerson => {
+                res.json(savedPerson.toJSON())
+            })        
+        }       
+    })
 
-    if (val) {
-        res.status(400).json(val)
-    } else {
-        let id = Math.floor(Math.random() * (persons.length + 10 - persons.length + 1) + persons.length);
-        console.log(id)
 
-        const person = new Person({ 
-            name: name, number: 
-            number, 
-            id: id
-        })
-
-        person.save().then(savedPerson => {
-            res.json(savedPerson.toJSON())
-        })        
-    }
 })
 
 app.delete('/api/persons/:id', (req, res) => {
