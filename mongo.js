@@ -9,8 +9,7 @@ console.log(process.argv.length)
 
 const password = process.argv[2]
 
-const url =
-    `mongodb+srv://dbUser:${password}@cluster0-5xwh4.mongodb.net/test?retryWrites=true`
+const url = process.env.MONGODB_URI;
 
 mongoose.connect(url, { useNewUrlParser: true })
 
