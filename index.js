@@ -13,7 +13,14 @@ app.use(morgan('combined'))
 app.use(cors())
 app.use(express.static('build'))
 
-
+const validate = (name, number) => {
+    if (number === "" || number === undefined) {
+        return { error: "number should be passed" }
+    } else if (name === "" || name === undefined) {
+        return { error: "name should be passed" }
+    }
+    return null
+}
 
 app.get('/', (req, res) => {
     res.send('<h1>Hello World!</h1>')
@@ -60,29 +67,23 @@ app.get('/api/persons/:id', (req, res) => {
 
 app.post('/api/persons', (req, res) => {
 
-    console.log("request:" + req);
+    console.log("request:" + req.body);
     const name = req.body.name;
     const number = req.body.number;
 
-    const validate = (name, number) => {
-        if (number === "" || number === undefined) {
-            return { error: "number should be passed" }
-        } else if (name === "" || name === undefined) {
-            return { error: "name should be passed" }
-            // } else if (persons.find(person => person.name === name)!=undefined) {
-            //     return { error: "name already exists" }
-        }
-        return null
+    val = validate(name, number)
+    if (val) {
+        res.status(400).json(val);
     }
 
     Person.find({}).then(persons => {
 
-        console.log('Search with same name: ' + persons.find(person => person.name === name));
-        const val = validate(name, number)
-        console.log("Validation result:" + val)
+        console.log('Search with same name: ' + name);
+        
+        console.log();
 
-        if (val) {
-            res.status(400).json(val)
+        if (persons.find(person => person.name === name)) {
+            res.status(400).send({error: "already exists, use PUT to update"})
         } else {
             const idNew = Math.max.apply(Math, persons.map((current) => current.id));
             console.log("id for new record: " + idNew + 1)
@@ -107,6 +108,40 @@ app.post('/api/persons', (req, res) => {
 
 })
 
+app.put('/api/persons', (req, res) => {
+
+    console.log("request:" + JSON.stringify(req.body));
+    const name = req.body.name;
+    const number = req.body.number;
+
+    val = validate(name, number)
+    if (val) {
+        res.status(400).json(val).end();
+    }
+
+    const filter = { name: name };
+    const update = { number: number };
+
+    Person.findOneAndUpdate(filter, update, { new: true })
+        .then(person => {
+            if (person) {
+                res.json(person);
+            } else {
+                console.log("didn't find");
+                res.status(404).end();
+            }
+        })
+        .catch(error => {
+            console.log(error);
+            res.status(500).end();
+        })
+
+    // console.log("found person: " + person);
+
+
+})
+
+
 app.delete('/api/persons/:id', (req, res) => {
 
     const id = Number(req.params.id);
@@ -116,7 +151,7 @@ app.delete('/api/persons/:id', (req, res) => {
             if (person.length > 0) {
                 console.log(person);
             } else {
-                res.status(404).end;               
+                res.status(404).end;
             }
         })
     Person.deleteOne({ id: id })
