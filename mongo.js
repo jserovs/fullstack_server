@@ -1,3 +1,4 @@
+require('dotenv').config()
 const mongoose = require('mongoose')
 
 if (process.argv.length < 3) {
@@ -7,7 +8,7 @@ if (process.argv.length < 3) {
 
 console.log(process.argv.length) 
 
-const password = process.argv[2]
+// const password = process.argv[2]
 
 const url = process.env.MONGODB_URI;
 

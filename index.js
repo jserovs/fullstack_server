@@ -2,7 +2,7 @@ require('dotenv').config()
 const express = require('express')
 const morgan = require('morgan')
 const bodyParser = require('body-parser')
-const Person = require ('./models/person')
+const Person = require('./models/person')
 
 const app = express()
 
@@ -14,23 +14,6 @@ app.use(cors())
 app.use(express.static('build'))
 
 
-let persons = [
-    {
-        "name": "Arto Hellas",
-        "number": "040-123456",
-        "id": 1
-    },
-    {
-        "name": "Ada Lovelace",
-        "number": "39-44-5323523",
-        "id": 2
-    },
-    {
-        "name": "Dan Abramov",
-        "number": "12-43-234345",
-        "id": 3
-    }
-]
 
 app.get('/', (req, res) => {
     res.send('<h1>Hello World!</h1>')
@@ -42,83 +25,107 @@ app.get('/info', (req, res) => {
     console.log(time)
     Person.find({}).then(persons => {
         res.send('There is ' + persons.length + ' people</br>'
-        + time)        
+            + time)
     })
 })
 
 app.get('/api/persons', (req, res) => {
     Person.find({}).then(persons => {
-        res.json(persons.map(person => person.toJSON()))
+        res.json(persons.map(person => person.toJSON()));
     })
 })
 
 app.get('/api/persons/:id', (req, res) => {
     const id = Number(req.params.id)
 
-    console.log ('searching for subscription')
+    console.log('searching for subscription with id =' + id);
+    Person.find({ id: id })
+        .then(person => {
+            if (person.length > 0) {
+                res.json(person);
+            } else {
+                console.log("didn't find");
+                res.status(404).end();
+            }
+        })
+        .catch(error => {
+            console.log(error);
+            res.status(500).end();
+        })
 
-    Person.find({ id : id} , (err, person) => {
-        console.log(person);
-        res.json(person);
-    })
 })
 
 app.post('/api/persons', (req, res) => {
 
-    const name = req.body.name
-    const number = req.body.number
-    // validating request content is not empty
-    console.log ('name:' + name)
-    console.log ('number: ' + number)
+    console.log("request:" + req);
+    const name = req.body.name;
+    const number = req.body.number;
 
     const validate = (name, number) => {
         if (number === "" || number === undefined) {
             return { error: "number should be passed" }
         } else if (name === "" || name === undefined) {
             return { error: "name should be passed" }
-        // } else if (persons.find(person => person.name === name)!=undefined) {
-        //     return { error: "name already exists" }
+            // } else if (persons.find(person => person.name === name)!=undefined) {
+            //     return { error: "name already exists" }
         }
         return null
     }
 
     Person.find({}).then(persons => {
 
-        console.log ('search with same number: ' + persons.find(person => person.name === name))
+        console.log('Search with same name: ' + persons.find(person => person.name === name));
         const val = validate(name, number)
-        console.log(val)
-    
+        console.log("Validation result:" + val)
+
         if (val) {
             res.status(400).json(val)
         } else {
-            let id = Math.floor(Math.random() * (persons.length + 10 - persons.length + 1) + persons.length);
-            console.log(id)
-    
-            const person = new Person({ 
-                name: name, number: 
-                number, 
-                id: id
+            const idNew = Math.max.apply(Math, persons.map((current) => current.id));
+            console.log("id for new record: " + idNew + 1)
+
+            const person = new Person({
+                name: name,
+                number: number,
+                id: idNew + 1
             })
-    
-            person.save().then(savedPerson => {
-                res.json(savedPerson.toJSON())
-            })        
-        }       
+
+            person.save()
+                .then(savedPerson => {
+                    res.json(savedPerson.toJSON())
+                })
+                .catch(error => {
+                    console.log(error);
+                    res.status(500).end();
+                })
+        }
     })
 
 
 })
 
 app.delete('/api/persons/:id', (req, res) => {
-    const id = Number(req.params.id)
-    const person = persons.find(person => person.id === id)
-    if (person) {
-        persons.splice(id, 1)
-        console.log(persons)
-        res.status(204).end()
-    } else {
-        res.status(404).end()
-    }
+
+    const id = Number(req.params.id);
+
+    Person.find({ id: id })
+        .then(person => {
+            if (person.length > 0) {
+                console.log(person);
+            } else {
+                console.log("didn't find");
+                res.status(404).end();
+            }
+        })
+    Person.deleteOne({ id: id })
+        .then(result => {
+            res.status(204).end();
+        })
+        .catch(error => {
+            console.log(error);
+            res.status(500).end();
+        })
+
 })
 
 const PORT = process.env.PORT
