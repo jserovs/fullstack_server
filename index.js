@@ -48,12 +48,15 @@ app.get('/api/persons/:id', (req, res) => {
                 res.status(404).end();
             }
         })
-        .catch(error => {
-            console.log(error);
-            res.status(500).end();
-        })
+        // .catch(error => {
+        //     console.log(error);
+        //     res.status(500).end();
+        // })
+        .catch(error => next(error));
 
 })
+
+
 
 app.post('/api/persons', (req, res) => {
 
@@ -113,8 +116,7 @@ app.delete('/api/persons/:id', (req, res) => {
             if (person.length > 0) {
                 console.log(person);
             } else {
-                console.log("didn't find");
-                res.status(404).end();
+                res.status(404).end;               
             }
         })
     Person.deleteOne({ id: id })
@@ -127,6 +129,23 @@ app.delete('/api/persons/:id', (req, res) => {
         })
 
 })
+
+const errorHandler = (error, request, response, next) => {
+    consile.log(error.name)
+    console.error(error.message)
+
+    if (error.name === "NOT_FOUND") {
+        return response.status(404).send({ error: 'not found' })
+    } else if (error.name === 'CastError') {
+        return response.status(400).send({ error: 'malformatted id' })
+    } else {
+        return response.status(500).send({ error: 'SOMETHING WENT WRONG' })
+    }
+
+}
+
+app.use(errorHandler);
+
 
 const PORT = process.env.PORT
 
